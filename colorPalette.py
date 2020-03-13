@@ -17,7 +17,7 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
         space (str): {'rgb', 'hsv', 'hex'} The color space of the color palette to be returned.
             
     Returns:
-        str: Color values of palette given in the specified space.  
+        list: Color values of palette given in the specified space.  
     """
    
     #get the title of the image from its path
@@ -175,7 +175,7 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
     #if we want to view it
     if (view == True):
 
-        #special condition for one color (TODO: streamline)
+        #special condition for one color
         if (min_iter == 1):
 
             fig, ax = plt.subplots(1,min_iter)
@@ -195,6 +195,61 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
             blank[:,:,2] = b / 255
 
             ax.imshow(blank)
+
+        #special condition for 9 colors (3x3 grid)
+        elif (number_of_chosen_hues == 9):
+
+            fig, axs = plt.subplots(3,3)
+            plt.subplots_adjust(hspace = 0.4)
+
+            iterator = 0
+            for ax in axs.reshape(-1):
+
+                ax.axis("off")
+
+                blank = np.zeros((500,500,3))
+
+                ax.set_title(final_hex_values[iterator], fontsize = 7)
+
+                r = final_rgb_values[iterator][0]
+                g = final_rgb_values[iterator][1]
+                b = final_rgb_values[iterator][2]
+            
+                blank[:,:,0] = r / 255
+                blank[:,:,1] = g / 255
+                blank[:,:,2] = b / 255
+
+                ax.imshow(blank)
+
+                iterator = iterator + 1
+
+
+        #special condition for 4 colors (2x2 grid)
+        elif (number_of_chosen_hues == 4):
+
+            fig, axs = plt.subplots(2,2)
+            plt.subplots_adjust(hspace = 0.4)
+
+            iterator = 0
+            for ax in axs.reshape(-1):
+
+                ax.axis("off")
+
+                blank = np.zeros((500,500,3))
+
+                ax.set_title(final_hex_values[iterator], fontsize = 7)
+
+                r = final_rgb_values[iterator][0]
+                g = final_rgb_values[iterator][1]
+                b = final_rgb_values[iterator][2]
+            
+                blank[:,:,0] = r / 255
+                blank[:,:,1] = g / 255
+                blank[:,:,2] = b / 255
+
+                ax.imshow(blank)
+
+                iterator = iterator + 1
 
         #otherwise, show the available palette
         else:
