@@ -23,7 +23,6 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
     #get the title of the image from its path
     title_string = path.split(".")[-2].split("/")[-1]
 
-
     #read and convert image
     src_BGR = cv2.imread(path, cv2.IMREAD_COLOR) 
     src_HSV = cv2.cvtColor(src_BGR, cv2.COLOR_BGR2HSV)
@@ -38,7 +37,7 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
     sat_vals = src_HSV[:,:,1]
     val_vals = src_HSV[:,:,2] 
 
-    #bin the hue channel at the highest resolution
+    #bin the hue channel at the highest resolution (opencv hue space goes from 0 -> 179)
     number_of_bins = 180
     lower_range_limit = 0
     upper_range_limit = 179
@@ -49,113 +48,137 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
     #sort the hues according to binsize (largest -> smallest)
     ranked_hue_values = np.argsort(-hue_distribution)[:len(hue_distribution)]
     ranked_hue_distribution = hue_distribution[ranked_hue_values]
-    
+   
+    #initialize storage for hues to be chosen 
     chosen_hues = []
 
+    #for each of the ranked hues
     for h in range(0, len(ranked_hue_values)):
 
+        #break if max is reached
         if (len(chosen_hues) == max_number_of_colors):
 
             break
         
         else:
 
+            #always choose top-ranked hue
             if (h == 0):
 
                 ranked_hue_value = ranked_hue_values[h]
-                previous_ranked_hue_value = ranked_hue_value
                 chosen_hues.append(ranked_hue_value)
 
+            
             else:
 
                 ranked_hue_value = ranked_hue_values[h]
 
+                #boolean decision array for closeness evaluation
                 closeness_bools = np.isclose(chosen_hues, ranked_hue_value, atol = hue_separation)
 
+                #if any of the booleans are True (ie, if any are within hue_separation)
                 if (any(closeness_bools)):
 
                     continue
 
+                #else, add that sucker
                 else:
 
                     chosen_hues.append(ranked_hue_value)
 
-    if (len(chosen_hues) == 0):
+    #catch exception where no hues are chosen, just in case
+    number_of_chosen_hues = len(chosen_hues)
+    if (number_of_chosen_hues == 0):
 
         print("ERROR: NO HUES WERE CHOSEN!")
         return (-1)
 
+    #initialize storage for saturation and value values
     saturation_values = []
     value_values = []
 
+    #for the chosen hues
     for h in range(0, len(chosen_hues)):
 
         chosen_hue = chosen_hues[h]
 
+        #for this hue, initialize empty potential value arrays
         potential_saturation_values = []
         potential_value_values = []
 
+        #loop through image
         for r in range(0,rows):
 
             for c in range(0,cols):
 
+                #get hsv value at this point
                 hue_val = hue_vals[r,c]
                 sat_val = sat_vals[r,c]
                 val_val = val_vals[r,c]
 
+                #if the hue value matches up, add the sat, val values cooresponding to it
                 if (chosen_hue == hue_val):
 
                     potential_saturation_values.append(sat_val)
                     potential_value_values.append(val_val)
-
-        if (len(potential_saturation_values) != 0):
+        
+        #if any potental sat, val values were found, choose one according to quantile stats
+        if (len(potential_saturation_values) != 0 and len(potential_value_values) != 0):
 
             saturation_values.append(int(np.quantile(potential_saturation_values, sq)))
-
-        if (len(potential_value_values) != 0):
-
             value_values.append(int(np.quantile(potential_value_values, vq)))
 
+    #initialize storage for final values
     final_rgb_values = []
     final_hex_values = []
     final_hsv_values = []
 
-    number_of_chosen_hues = len(chosen_hues)
+    #get minimum iterable number by comparing h,s,v lengths 
     number_of_saturation_values = len(saturation_values)
     number_of_value_values = len(value_values)
     iter_options = [number_of_chosen_hues, number_of_saturation_values, number_of_value_values]
-    my_iter = np.min(iter_options)
+    min_iter = np.min(iter_options)
 
-    for i in range(0, my_iter):
-
+    for i in range(0, min_iter):
+    
+        #get hsv
         h = chosen_hues[i]
         s = saturation_values[i]
         v = value_values[i]
 
+        #normalize to allow conversion
         h_norm = h / upper_range_limit
         s_norm = s / 255
         v_norm = v / 255
 
+        #add to final array (nb scaling and rounding)
         final_hsv_values.append((int(h * 2), np.around(s_norm,2), np.around(v_norm,2)))
 
+        #convert back to rgb
         rgb_norm = colorsys.hsv_to_rgb(h_norm, s_norm, v_norm)
 
+        #scale to get 'uint8' rgb values
         r = int(rgb_norm[0] * 255)
         g = int(rgb_norm[1] * 255)
         b = int(rgb_norm[2] * 255)
 
+        #create tuple for rgb
         rgb = (r, g, b)
 
+        #get hex via rgb
         hex_string = '#%02x%02x%02x' % rgb
 
+        #append the final values for rgb and hex
         final_rgb_values.append(rgb)
         final_hex_values.append(hex_string)
 
+    #if we want to view it
     if (view == True):
 
-        if (my_iter == 1):
+        #special condition for one color (TODO: streamline)
+        if (min_iter == 1):
 
-            fig, ax = plt.subplots(1,my_iter)
+            fig, ax = plt.subplots(1,min_iter)
 
             ax.axis("off")
 
@@ -173,9 +196,10 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
 
             ax.imshow(blank)
 
+        #otherwise, show the available palette
         else:
 
-            fig, axs = plt.subplots(1, my_iter)
+            fig, axs = plt.subplots(1, min_iter)
 
             iterator = 0
             for ax in axs.reshape(-1):
@@ -200,6 +224,7 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
 
         plt.show()
 
+    #return information to user
     if (space == 'hsv'):
         
         return final_hsv_values
