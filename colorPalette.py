@@ -14,7 +14,7 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
         hue_separation (int): Value to control hue similarity. Higher -> more hue separation. 
         sq (float): [0:1] HSV Saturation quantile that you want represented.
         vq (float): [0:1] HSV Value quantile that you want represented.
-        space (str): {'rgb', 'hsv', 'hex'} The color space of the color palette to be returned.
+        space (str): {'rgb', 'bgr', 'hsv', 'hex'} The color space of the color palette to be returned.
             
     Returns:
         list: Color values of palette given in the specified space.  
@@ -130,6 +130,7 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
 
     #initialize storage for final values
     final_rgb_values = []
+    final_bgr_values = []
     final_hex_values = []
     final_hsv_values = []
 
@@ -164,12 +165,16 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
 
         #create tuple for rgb
         rgb = (r, g, b)
+        
+        #create tuple for bgr
+        bgr = (b, g, r)
 
         #get hex via rgb
         hex_string = '#%02x%02x%02x' % rgb
 
         #append the final values for rgb and hex
         final_rgb_values.append(rgb)
+        final_bgr_values.append(bgr)
         final_hex_values.append(hex_string)
 
     #if we want to view it
@@ -287,6 +292,10 @@ def colorPalette(path, view, max_number_of_colors, hue_separation, sq, vq, space
     elif (space == 'rgb'):
 
         return final_rgb_values
+
+    elif (space == 'bgr'):
+
+        return final_bgr_values
 
     elif (space == 'hex'):
 
